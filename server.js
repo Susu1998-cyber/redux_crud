@@ -31,6 +31,11 @@ mongoose
   .then(() => console.log("Connected to MongoDB Database"))
   .catch((err) => console.error("Could not connect to MongoDB", err));
 
+  app.get("/", (req, res) => {
+  res.send("Backend is running successfully ");
+});
+
+
 app.listen(port, () => {
   console.log(`Server is Running on ${port}`);
 });
