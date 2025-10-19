@@ -5,6 +5,11 @@ require("dotenv").config();
 
 const authRoutes = require("./route/userRoutes");
 const employeeRoutes = require("./route/employeeRoutes");
+const cartRoutes = require('./route/cartRoutes')
+const paymentRoutes = require('./route/paymentRoutes');
+
+
+// const productRoutes = require('./route/productRoutes')
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -14,6 +19,9 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/employe", employeeRoutes);
+app.use('/api/cart',cartRoutes)
+app.use('/api/payment',paymentRoutes)
+// app.use("/api/products",productRoutes)
 
 mongoose
   .connect(process.env.DB_CONNECTION, {

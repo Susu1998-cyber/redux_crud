@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const nodemailer = require("nodemailer");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // @desc Register User
 exports.register = async (req, res) => {
@@ -144,4 +146,62 @@ exports.resetPassword = async (req, res) => {
       });
     }
   });
+};
+
+exports.loginWithGoogle = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ message: "Missing idToken" });
+
+    // Verify Google ID token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload(); 
+
+    if (!payload?.email || !payload?.email_verified) {
+      return res.status(400).json({ message: "Google email not verified" });
+    }
+
+    // Upsert user by email
+    let user = await User.findOne({ email: payload.email });
+
+    if (!user) {
+      user = new User({
+        username: payload.name || payload.email.split("@")[0],
+        email: payload.email,
+        password: null, // no local password for Google users
+        googleSub: payload.sub,
+        authProvider: "google",
+        avatar: payload.picture,
+      });
+      await user.save();
+    } else {
+      // If an existing local user logs in via Google, link the account
+      if (!user.googleSub) user.googleSub = payload.sub;
+      if (!user.authProvider) user.authProvider = "google";
+      if (!user.avatar && payload.picture) user.avatar = payload.picture;
+      await user.save();
+    }
+
+    // Issue your normal JWT (keep same expiry as your /login)
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // Keep response shape consistent with your login()
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username, // NOTE: your login() used user.name by mistake
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(401).json({ message: "Invalid Google token" });
+  }
 };

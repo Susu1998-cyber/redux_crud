@@ -11,4 +11,6 @@ router.post("/forgot-password", useController.forgetpassword);
 
 router.post("/resetpassword/:token/:id", useController.resetPassword);
 
+router.post("/google", useController.loginWithGoogle);
+
 module.exports = router;

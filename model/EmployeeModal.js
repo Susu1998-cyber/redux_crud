@@ -6,6 +6,7 @@ const EmployeeSchema = new mongoose.Schema({
   phone: { type: String },
   address: { type: String },
   position: { type: String },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 });
 
 module.exports = mongoose.model("Employee", EmployeeSchema);
